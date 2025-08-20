@@ -1,0 +1,52 @@
+// data.js
+export const homePopularWorkouts = {
+  'Warm-up': [
+    { name: 'Jumping Jacks', sets: '3', reps: '30 seconds', info: 'Full body warm-up, increases heart rate.' },
+    { name: 'Arm Circles (Forward/Backward)', sets: '2', reps: '10-15 each direction', info: 'Shoulder mobility.' },
+    { name: 'Leg Swings (Forward/Side)', sets: '2', reps: '10-15 each leg', info: 'Hip mobility.' },
+    { name: 'Torso Twists', sets: '2', reps: '10-15 each side', info: 'Spinal mobility.' },
+    { name: 'Light Cardio (e.g., Marching in Place)', sets: '1', reps: '2-3 minutes', info: 'Prepares cardiovascular system.' },
+  ],
+  'Upper Body (Bodyweight/Dumbbell)': [
+    { name: 'Push-ups (Knees/Standard/Incline)', sets: '3-4', reps: 'AMRAP (As Many Reps As Possible)', info: 'Chest, shoulders, triceps. Adjust difficulty with incline.' },
+    { name: 'Dumbbell Floor Press', sets: '3', reps: '8-12', info: 'Chest and triceps, good for home use with dumbbells.' },
+    { name: 'Dumbbell Rows (Single Arm)', sets: '3', reps: '8-12 per arm', info: 'Back (lats) and biceps.' },
+    { name: 'Dumbbell Overhead Press (Seated)', sets: '3', reps: '8-12', info: 'Shoulders.' },
+    { name: 'Dumbbell Bicep Curls', sets: '3', reps: '10-15', info: 'Biceps isolation.' },
+    { name: 'Dumbbell Triceps Extensions (Overhead)', sets: '3', reps: '10-15', info: 'Triceps isolation.' },
+    { name: 'Dumbbell Side Raises', sets: '3', reps: '10-15', info: 'Targets side deltoids for shoulder width.' },
+    { name: 'Dumbbell Front Raises', sets: '3', reps: '10-15', info: 'Targets front deltoids for shoulder strength.' },
+    { name: 'Dumbbell Hammer Curls', sets: '3', reps: '10-15 per arm', info: 'Targets the biceps and forearms.' },
+    { name: 'Dumbbell Skull Crushers (on the floor)', sets: '3', reps: '10-15', info: 'Excellent isolation exercise for the triceps.' },
+    { name: 'Decline Push-ups', sets: '3-4', reps: 'AMRAP', info: 'Increases the difficulty of standard push-ups by elevating your feet.' },
+    { name: 'T-Plank Rotations', sets: '3', reps: '8-10 per side', info: 'A dynamic core and shoulder stability exercise.' },
+  ],
+  'Lower Body & Core (Bodyweight/Dumbbell)': [
+    { name: 'Squats (Bodyweight/Goblet Squat)', sets: '3-4', reps: '8-15', info: 'Works quads, glutes, hamstrings.' },
+    { name: 'Lunges (Bodyweight/Dumbbell)', sets: '3', reps: '8-12 per leg', info: 'Quads, glutes, hamstrings, balance.' },
+    { name: 'Glute Bridges', sets: '3', reps: '12-20', info: 'Targets glutes and hamstrings.' },
+    { name: 'Romanian Deadlift (Dumbbell RDL)', sets: '3', reps: '10-15', info: 'Excellent for hamstrings and glutes with dumbbells.' },
+    { name: 'Calf Raises (Bodyweight/Dumbbell)', sets: '3-4', reps: '15-20', info: 'Calf muscles.' },
+    { name: 'Plank', sets: '3', reps: '30-60 seconds hold', info: 'Core strength.' },
+    { name: 'Crunches', sets: '3', reps: '15-20', info: 'Upper abs.' },
+    { name: 'Russian Twists', sets: '3', reps: '15-20 per side', info: 'Obliques.' },
+    { name: 'Leg Raises', sets: '3', reps: '15-20', info: 'Targets lower abs.' },
+    { name: 'Flutter Kicks', sets: '3', reps: '30-60 seconds', info: 'Engages lower abs and hip flexors.' },
+    { name: 'Bulgarian Split Squats', sets: '3', reps: '8-12 per leg', info: 'Targets one leg at a time to improve balance and strength.' },
+    { name: 'Single-Leg Romanian Deadlifts (RDLs)', sets: '3', reps: '8-12 per leg', info: 'Works the hamstrings, glutes, and improves stability.' },
+    { name: 'Calf Raises (Single-Leg)', sets: '3', reps: '15-20 per leg', info: 'Increases the intensity of calf work.' },
+    { name: 'Side Plank', sets: '3', reps: '30-60 seconds hold per side', info: 'Targets the obliques and improves core stability.' },
+  ],
+  'Cardio': [
+    { name: 'High Knees', sets: '3', reps: '30-60 seconds', info: 'Improves cardio and leg strength.' },
+    { name: 'Butt Kicks', sets: '3', reps: '30-60 seconds', info: 'Targets hamstrings and cardio.' },
+    { name: 'Mountain Climbers', sets: '3', reps: '30-60 seconds', info: 'Full body, high intensity.' },
+    { name: 'Burpees', sets: '3', reps: '8-12', info: 'Full body, high intensity, advanced.' },
+    { name: 'Jump Rope', sets: '3', reps: '1-2 minutes', info: 'Excellent cardio and coordination.' },
+  ],
+  'Stretching & Mobility': [
+    { name: 'Cat-Cow Stretch', sets: '2', reps: '10-15 reps', info: 'Improves spinal mobility and flexibility.' },
+    { name: 'Seated Hamstring Stretch', sets: '2', reps: '30-60 seconds hold per leg', info: 'Stretches the hamstrings and lower back.' },
+    { name: 'Pigeon Pose', sets: '2', reps: '30-60 seconds hold per side', info: 'A deep stretch for the hips and glutes.' },
+  ]
+};
