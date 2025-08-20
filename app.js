@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc } from 'firebase/firestore'; // Removed getDoc as it's not used directly
 
 // Embedded Home Workout Data
 const homePopularWorkouts = {
@@ -57,10 +57,12 @@ const homePopularWorkouts = {
 };
 
 
-// Ensure __app_id, __firebase_config, and __initial_auth_token are defined in the environment.
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+// Declare global variables from the Canvas environment, if they exist.
+// This helps ESLint understand they are provided externally.
+const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
+const firebaseConfig = typeof window.__firebase_config !== 'undefined' ? JSON.parse(window.__firebase_config) : {};
+const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null;
+
 
 // Utility function to convert Firebase Timestamps to readable dates
 const formatTimestamp = (timestamp) => {
@@ -228,7 +230,7 @@ const RestTimer = ({ onTimerEnd }) => {
 
 const App = () => {
   const [db, setDb] = useState(null);
-  const [auth, setAuth] = useState(null);
+  const [auth, setAuth] = useState(null); // auth is used in the onAuthStateChanged listener
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [appError, setAppError] = useState(null); // General application errors
@@ -246,7 +248,7 @@ const App = () => {
 
   // My Exercise Bank states
   const [myExercises, setMyExercises] = useState([]); // User's selected exercises
-  const [showExerciseAlert, setShowExerciseAlert] = useState(false);
+  const [showExerciseAlert, setShowExerciseAlert] = useState(false); // Used in CustomAlert component
   const [exerciseAlertMessage, setExerciseAlertMessage] = useState('');
 
   // Routine Generation states
@@ -273,7 +275,7 @@ const App = () => {
       const firebaseAuth = getAuth(app);
 
       setDb(firestoreDb);
-      setAuth(firebaseAuth);
+      setAuth(firebaseAuth); // Set auth state here
 
       const unsubscribeAuth = onAuthStateChanged(firebaseAuth, async (user) => {
         if (user) {
@@ -300,7 +302,7 @@ const App = () => {
       setAppError("Failed to initialize the application.");
       setLoading(false);
     }
-  }, []);
+  }, [initialAuthToken]); // Added initialAuthToken to dependencies to correctly trigger effect on its availability
 
   // Fetch User's My Exercises and Routine from Firestore
   useEffect(() => {
@@ -387,7 +389,7 @@ const App = () => {
 
     try {
       await setDoc(myExercisesDocRef, { exercises: updatedExercises }, { merge: true });
-      setShowExerciseAlert(true);
+      setShowExerciseAlert(true); // showExerciseAlert is used here
     } catch (e) {
       console.error("Error updating my exercises:", e);
       setAppError("Failed to update your exercise bank.");
