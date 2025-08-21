@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc } from 'firebase/firestore'; // Removed getDoc as it's not used directly
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 
 // Embedded Home Workout Data
 const homePopularWorkouts = {
@@ -230,7 +230,7 @@ const RestTimer = ({ onTimerEnd }) => {
 
 const App = () => {
   const [db, setDb] = useState(null);
-  const [auth, setAuth] = useState(null); // auth is used in the onAuthStateChanged listener
+  // Removed unused auth state
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [appError, setAppError] = useState(null); // General application errors
@@ -270,12 +270,18 @@ const App = () => {
   // Firebase Initialization and Auth
   useEffect(() => {
     try {
+      // Check if firebaseConfig is empty or malformed
+      if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.apiKey) {
+        setAppError("Firebase configuration is missing or invalid. Please ensure your Firebase project is correctly set up in the environment.");
+        setLoading(false);
+        return; // Stop initialization if config is bad
+      }
+
       const app = initializeApp(firebaseConfig);
       const firestoreDb = getFirestore(app);
       const firebaseAuth = getAuth(app);
 
       setDb(firestoreDb);
-      setAuth(firebaseAuth); // Set auth state here
 
       const unsubscribeAuth = onAuthStateChanged(firebaseAuth, async (user) => {
         if (user) {
@@ -299,10 +305,11 @@ const App = () => {
       return () => unsubscribeAuth();
     } catch (initError) {
       console.error("Firebase initialization error:", initError);
-      setAppError("Failed to initialize the application.");
+      // Catch other potential initialization errors
+      setAppError(`Failed to initialize the application: ${initError.message || "Unknown error"}`);
       setLoading(false);
     }
-  }, [initialAuthToken]); // Added initialAuthToken to dependencies to correctly trigger effect on its availability
+  }, []); // Removed initialAuthToken from dependencies as it's not a valid dependency
 
   // Fetch User's My Exercises and Routine from Firestore
   useEffect(() => {
@@ -371,6 +378,8 @@ const App = () => {
   // Add/Remove Exercise from My Exercises
   const toggleMyExercise = async (exercise) => {
     if (!db || !userId) {
+      // The button will be disabled, so this alert should ideally not be hit unless something else is wrong.
+      // Keeping it for robustness, but the primary fix is UI disabling.
       setAppError("Database not ready.");
       return;
     }
@@ -481,7 +490,8 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
         }
       }
     };
-    const apiKey = ""; // Leave empty for Canvas to provide
+    // Corrected API key usage to explicitly pull from window.__api_key
+    const apiKey = typeof window.__api_key !== 'undefined' ? window.__api_key : ""; 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
     let retries = 0;
@@ -600,6 +610,9 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
     setView('home'); // Go back to home after closing modal
   };
 
+  // Determine if the app is ready for database interactions
+  const isAppReady = db && userId && !loading;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -616,8 +629,13 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6 flex flex-col items-center">
+      {/* Conditionally render CustomAlert for general app errors */}
       <CustomAlert message={appError} onClose={() => setAppError(null)} />
-      <CustomAlert message={exerciseAlertMessage} onClose={() => setShowExerciseAlert(false)} />
+
+      {/* Conditionally render CustomAlert specifically for exercise bank messages */}
+      {showExerciseAlert && (
+        <CustomAlert message={exerciseAlertMessage} onClose={() => setShowExerciseAlert(false)} />
+      )}
 
       {/* Workout Completion Modal */}
       {showWorkoutCompletionModal && (
@@ -699,7 +717,8 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                       </ul>
                       <button
                         onClick={handleStartWorkout}
-                        className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+                        disabled={!isAppReady} // Disable if app is not ready
+                        className={`bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg ${!isAppReady ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         Start Today's Workout!
                       </button>
@@ -724,6 +743,7 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                   value={workoutName}
                   onChange={(e) => setWorkoutName(e.target.value)}
                   placeholder="Workout Name (Optional, e.g., 'Quick Session')"
+                  disabled={!isAppReady} // Disable if app is not ready
                 />
                 <input
                   type="text"
@@ -732,6 +752,7 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                   onChange={(e) => setExerciseName(e.target.value)}
                   placeholder="Exercise Name (e.g., 'Push-ups')"
                   required
+                  disabled={!isAppReady} // Disable if app is not ready
                 />
                 <div className="grid grid-cols-3 gap-4">
                   <input
@@ -742,6 +763,7 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                     placeholder="Sets"
                     min="1"
                     required
+                    disabled={!isAppReady} // Disable if app is not ready
                   />
                   <input
                     type="number"
@@ -751,6 +773,7 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                     placeholder="Reps"
                     min="1"
                     required
+                    disabled={!isAppReady} // Disable if app is not ready
                   />
                   <input
                     type="number"
@@ -760,11 +783,13 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                     placeholder="Weight (kg/lbs, 0 if bodyweight)"
                     step="0.1"
                     required
+                    disabled={!isAppReady} // Disable if app is not ready
                   />
                 </div>
                 <button
                   type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg mt-4"
+                  disabled={!isAppReady} // Disable if app is not ready
+                  className={`bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg mt-4 ${!isAppReady ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   Add Log Entry
                 </button>
@@ -794,8 +819,8 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                           myExercises.some(ex => ex.name === exercise.name)
                             ? 'bg-blue-200 border-blue-500'
                             : 'bg-white border-gray-200 hover:bg-gray-100'
-                        }`}
-                        onClick={() => toggleMyExercise(exercise)}
+                        } ${!isAppReady ? 'opacity-50 cursor-not-allowed' : ''}`} // Disable card if app is not ready
+                        onClick={isAppReady ? () => toggleMyExercise(exercise) : undefined} // Only allow click if app is ready
                       >
                         <p className="text-lg font-semibold text-gray-900">{exercise.name}</p>
                         <p className="text-gray-600 text-sm">Sets: {exercise.sets}, Reps: {exercise.reps}</p>
@@ -851,13 +876,14 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
               placeholder="e.g., 3"
               min="1"
               max="7"
+              disabled={!isAppReady} // Disable if app is not ready
             />
 
             <div className="flex justify-center gap-4">
               <button
                 onClick={handleGenerateRoutine}
-                disabled={generatingRoutine || myExercises.length === 0}
-                className={`bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg ${generatingRoutine || myExercises.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={generatingRoutine || myExercises.length === 0 || !isAppReady} // Disable if app is not ready
+                className={`bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg ${generatingRoutine || myExercises.length === 0 || !isAppReady ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {generatingRoutine ? 'Generating...' : '✨ Generate Routine'}
               </button>
@@ -869,7 +895,8 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                     // Optionally remove from Firestore here too
                     // deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/appData/generatedRoutine`));
                   }}
-                  className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+                  disabled={!isAppReady} // Disable if app is not ready
+                  className={`bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg ${!isAppReady ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   Clear Current Routine
                 </button>
@@ -932,12 +959,14 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                 <div className="flex justify-center gap-4 mb-8">
                   <button
                     onClick={handleNextSet}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+                    disabled={!isAppReady} // Disable if app is not ready
+                    className={`bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg ${!isAppReady ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {currentSetIndex < totalSetsForCurrentExercise - 1 ? 'Next Set' : 'Next Exercise / Finish Workout'}
                   </button>
                 </div>
 
+                {/* Stopwatch and Rest Timer are standalone and don't require database directly for their core function */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                   <Stopwatch />
                   <RestTimer onTimerEnd={() => setAppError("Rest time over! Get ready for your next set.")} />
@@ -969,6 +998,7 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
             <h2 className="text-3xl font-bold text-blue-700 mb-6 text-center">
               Workout History
             </h2>
+            {/* The history display itself is always available, but fetching happens only when db and userId are ready */}
             {loggedWorkouts.length === 0 ? (
               <p className="text-center text-gray-500 text-lg">No workouts logged yet. Start adding some!</p>
             ) : (
