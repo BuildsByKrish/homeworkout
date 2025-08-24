@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc } from 'firebase/firestore'; 
 
 // Embedded Home Workout Data
 const homePopularWorkouts = {
@@ -56,12 +56,20 @@ const homePopularWorkouts = {
   ]
 };
 
-
-// Declare global variables from the Canvas environment, if they exist.
-// This helps ESLint understand they are provided externally.
+// Access global variables from the window object where they are often provided in specific environments.
 const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
-const firebaseConfig = typeof window.__firebase_config !== 'undefined' ? JSON.parse(window.__firebase_config) : {};
 const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null;
+
+// Firebase configuration directly embedded for robustness
+const firebaseConfig = {
+  apiKey: "AIzaSyDnWJrN4XggVtDyxXQPi0TXLaVSuaETqwQ",
+  authDomain: "homeworkout-pal.firebaseapp.com",
+  projectId: "homeworkout-pal", // Ensuring projectId is present
+  storageBucket: "homeworkout-pal.firebasestorage.app",
+  messagingSenderId: "523845584790",
+  appId: "1:523845584790:web:15554c8433a691bac0bfb7",
+  measurementId: "G-58CBP7GDQW"
+};
 
 
 // Utility function to convert Firebase Timestamps to readable dates
@@ -230,7 +238,7 @@ const RestTimer = ({ onTimerEnd }) => {
 
 const App = () => {
   const [db, setDb] = useState(null);
-  // Removed unused auth state
+  const [auth, setAuth] = useState(null); 
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [appError, setAppError] = useState(null); // General application errors
@@ -275,6 +283,7 @@ const App = () => {
       const firebaseAuth = getAuth(app);
 
       setDb(firestoreDb);
+      setAuth(firebaseAuth); // Set auth state here
 
       const unsubscribeAuth = onAuthStateChanged(firebaseAuth, async (user) => {
         if (user) {
@@ -298,10 +307,11 @@ const App = () => {
       return () => unsubscribeAuth();
     } catch (initError) {
       console.error("Firebase initialization error:", initError);
-      setAppError("Failed to initialize the application.");
+      setAppError(`Failed to initialize the application: ${initError.message || "Unknown error"}`);
       setLoading(false);
     }
-  }, []); // No dependencies needed; initialAuthToken is a constant
+  }, []); // firebaseConfig is now a constant defined within this file, so it doesn't need to be a dependency
+
 
   // Fetch User's My Exercises and Routine from Firestore
   useEffect(() => {
@@ -355,7 +365,8 @@ const App = () => {
         unsubscribeLoggedWorkouts();
       };
     }
-  }, [db, userId]);
+  }, [db, userId, appId]);
+
 
   // Helper to get today's workout based on the generated routine
   const getTodayWorkout = useCallback(() => {
@@ -388,7 +399,7 @@ const App = () => {
 
     try {
       await setDoc(myExercisesDocRef, { exercises: updatedExercises }, { merge: true });
-      setShowExerciseAlert(true); // showExerciseAlert is used here
+      setShowExerciseAlert(true);
     } catch (e) {
       console.error("Error updating my exercises:", e);
       setAppError("Failed to update your exercise bank.");
@@ -399,7 +410,7 @@ const App = () => {
   // Handle adding a manual workout log entry
   const handleAddWorkoutLog = async (e) => {
     e.preventDefault();
-    if (!exerciseName || !sets || !reps || !weight) {
+    if (!exerciseName || !sets || !reps || !weight) { 
       setAppError("Please fill in all exercise details for the log.");
       return;
     }
@@ -440,6 +451,11 @@ const App = () => {
       setRoutineGenerationError("Please specify a valid number of workout days (1-7).");
       return;
     }
+    // Ensure db, userId, and auth are available before proceeding
+    if (!db || !userId || !auth) {
+      setAppError("Application is not fully initialized. Please wait or refresh.");
+      return;
+    }
 
     setGeneratingRoutine(true);
     setGeneratedRoutine(null);
@@ -470,7 +486,7 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
               type: "OBJECT",
               properties: {
                 "name": { "type": "STRING" },
-                "sets": { "type": "STRING" },
+                "sets": { "type": "STRING" }, 
                 "reps": { "type": "STRING" },
                 "type": { "type": "STRING", "enum": ["warmup", "exercise"] }
               },
@@ -480,7 +496,6 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
         }
       }
     };
-    // Corrected API key usage to explicitly pull from window.__api_key
     const apiKey = typeof window.__api_key !== 'undefined' ? window.__api_key : ""; 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
@@ -551,7 +566,7 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
     if (!currentDayWorkout) return;
 
     const currentExercise = currentDayWorkout[currentExerciseIndex];
-    if (!currentExercise) return; // Should not happen
+    if (!currentExercise) return; 
 
     // Log the completed set if it's an exercise (not warm-up)
     if (currentExercise.type === 'exercise') {
@@ -560,9 +575,9 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
         await addDoc(workoutsCollectionRef, {
           workoutName: `Routine Workout (${new Date().toLocaleDateString()})`,
           exerciseName: currentExercise.name,
-          sets: 1, // Log one set at a time for simplicity
-          reps: currentExercise.reps.includes('AMRAP') ? 'AMRAP' : parseInt(currentExercise.reps, 10), // Capture AMRAP if applicable
-          weight: 0, // Assume bodyweight for home workouts, or you could add an input later
+          sets: 1, 
+          reps: currentExercise.reps.includes('AMRAP') ? 'AMRAP' : parseInt(currentExercise.reps, 10), 
+          weight: 0, 
           timestamp: serverTimestamp()
         });
       } catch (logError) {
@@ -588,17 +603,18 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
         setIsWorkoutActive(false);
         const suggestion = "Great job! For progressive overload next week, try adding 1-2 more reps per set, increasing a set, or slightly decreasing your rest time (e.g., from 90s to 60s). Keep challenging yourselves!";
         setProgressSuggestion(suggestion);
-        setShowWorkoutCompletionModal(true); // Show completion modal
-        // Optionally, reset view to home or history after completion
-        // setView('home');
+        setShowWorkoutCompletionModal(true); 
       }
     }
   };
 
   const handleWorkoutCompletionModalClose = () => {
     setShowWorkoutCompletionModal(false);
-    setView('home'); // Go back to home after closing modal
+    setView('home'); 
   };
+
+  // Determine if the app is ready for database interactions
+  const isAppReady = db && userId && !loading;
 
   if (loading) {
     return (
@@ -704,7 +720,8 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                       </ul>
                       <button
                         onClick={handleStartWorkout}
-                        className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+                        disabled={!isAppReady} 
+                        className={`bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg ${!isAppReady ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         Start Today's Workout!
                       </button>
@@ -729,6 +746,7 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                   value={workoutName}
                   onChange={(e) => setWorkoutName(e.target.value)}
                   placeholder="Workout Name (Optional, e.g., 'Quick Session')"
+                  disabled={!isAppReady} 
                 />
                 <input
                   type="text"
@@ -737,6 +755,7 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                   onChange={(e) => setExerciseName(e.target.value)}
                   placeholder="Exercise Name (e.g., 'Push-ups')"
                   required
+                  disabled={!isAppReady} 
                 />
                 <div className="grid grid-cols-3 gap-4">
                   <input
@@ -747,6 +766,7 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                     placeholder="Sets"
                     min="1"
                     required
+                    disabled={!isAppReady} 
                   />
                   <input
                     type="number"
@@ -756,6 +776,7 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                     placeholder="Reps"
                     min="1"
                     required
+                    disabled={!isAppReady} 
                   />
                   <input
                     type="number"
@@ -765,11 +786,13 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                     placeholder="Weight (kg/lbs, 0 if bodyweight)"
                     step="0.1"
                     required
+                    disabled={!isAppReady} 
                   />
                 </div>
                 <button
                   type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg mt-4"
+                  disabled={!isAppReady} 
+                  className={`bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg mt-4 ${!isAppReady ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   Add Log Entry
                 </button>
@@ -799,8 +822,8 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                           myExercises.some(ex => ex.name === exercise.name)
                             ? 'bg-blue-200 border-blue-500'
                             : 'bg-white border-gray-200 hover:bg-gray-100'
-                        }`}
-                        onClick={() => toggleMyExercise(exercise)}
+                        } ${!isAppReady ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                        onClick={isAppReady ? () => toggleMyExercise(exercise) : undefined} 
                       >
                         <p className="text-lg font-semibold text-gray-900">{exercise.name}</p>
                         <p className="text-gray-600 text-sm">Sets: {exercise.sets}, Reps: {exercise.reps}</p>
@@ -856,13 +879,14 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
               placeholder="e.g., 3"
               min="1"
               max="7"
+              disabled={!isAppReady} 
             />
 
             <div className="flex justify-center gap-4">
               <button
                 onClick={handleGenerateRoutine}
-                disabled={generatingRoutine || myExercises.length === 0}
-                className={`bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg ${generatingRoutine || myExercises.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={generatingRoutine || myExercises.length === 0 || !isAppReady} 
+                className={`bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg ${generatingRoutine || myExercises.length === 0 || !isAppReady ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {generatingRoutine ? 'Generating...' : '✨ Generate Routine'}
               </button>
@@ -871,10 +895,9 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                   onClick={() => {
                     setGeneratedRoutine(null);
                     setHasRoutine(false);
-                    // Optionally remove from Firestore here too
-                    // deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/appData/generatedRoutine`));
                   }}
-                  className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+                  disabled={!isAppReady} 
+                  className={`bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg ${!isAppReady ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   Clear Current Routine
                 </button>
@@ -937,12 +960,14 @@ Ensure all exercises from the provided list are used if possible. Make sure to o
                 <div className="flex justify-center gap-4 mb-8">
                   <button
                     onClick={handleNextSet}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+                    disabled={!isAppReady} 
+                    className={`bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 shadow-lg ${!isAppReady ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {currentSetIndex < totalSetsForCurrentExercise - 1 ? 'Next Set' : 'Next Exercise / Finish Workout'}
                   </button>
                 </div>
 
+                {/* Stopwatch and Rest Timer are standalone and don't require database directly for their core function */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                   <Stopwatch />
                   <RestTimer onTimerEnd={() => setAppError("Rest time over! Get ready for your next set.")} />
